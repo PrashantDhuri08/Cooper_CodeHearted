@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { splitwiseApi, Settlement } from "@/lib/api";
+import { splitwiseApi, SettlementResponse } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Scale, RefreshCw } from "lucide-react";
+import { Scale, RefreshCw, Banknote } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -24,13 +24,27 @@ export function SettlementTable({ eventId }: SettlementTableProps) {
             const data = await splitwiseApi.getSettlement(eventId);
             const settlementArray = Object.entries(data).map(([userId, netBalance]) => ({
                 userId,
-                netBalance,
+                netBalance: Number(netBalance),
             }));
             setSettlement(settlementArray);
             setHasFetched(true);
         } catch (error) {
             console.error("Failed to fetch settlement", error);
             alert("Failed to fetch settlement data.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRefunds = async () => {
+        setLoading(true);
+        try {
+            const res = await splitwiseApi.processRefunds(eventId);
+            alert(res.status);
+            handleFetch(); // Refresh
+        } catch (error) {
+            console.error("Failed to process refunds", error);
+            alert("Failed to process refunds.");
         } finally {
             setLoading(false);
         }
@@ -46,10 +60,16 @@ export function SettlementTable({ eventId }: SettlementTableProps) {
                     </CardTitle>
                     <CardDescription>Real-time balance sheet.</CardDescription>
                 </div>
-                <Button onClick={handleFetch} disabled={loading} variant="outline" size="sm" className="border-blue-500/30 text-blue-300 hover:bg-blue-500/20">
-                    <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
-                    View Settlement
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={handleRefunds} disabled={loading || !hasFetched} variant="secondary" size="sm" className="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border-emerald-500/30">
+                        <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
+                        Process Refunds
+                    </Button>
+                    <Button onClick={handleFetch} disabled={loading} variant="outline" size="sm" className="border-blue-500/30 text-blue-300 hover:bg-blue-500/20">
+                        <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
+                        View Settlement
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
                 {hasFetched && (

@@ -1,4 +1,5 @@
 import { CreateEvent } from "@/components/features/CreateEvent";
+import { AuthSession } from "@/components/features/AuthSession";
 
 export default function Home() {
   return (
@@ -9,7 +10,10 @@ export default function Home() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-900/30 rounded-full blur-[100px] animate-pulse-slow" />
       </div>
 
-      <CreateEvent />
+      <div className="w-full max-w-md space-y-8 relative z-10">
+        <AuthSession />
+        <CreateEvent />
+      </div>
     </main>
   );
 }

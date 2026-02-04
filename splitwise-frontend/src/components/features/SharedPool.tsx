@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { splitwiseApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -22,8 +24,15 @@ export function SharedPool({ eventId }: SharedPoolProps) {
     const [deposits, setDeposits] = useState<DepositLog[]>([]);
     const [balance, setBalance] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [hasUserId, setHasUserId] = useState(false);
 
     useEffect(() => {
+        const storedUserId = localStorage.getItem("userId");
+        if (storedUserId) {
+            setUserId(storedUserId);
+            setHasUserId(true);
+        }
+
         const fetchBalance = async () => {
             try {
                 const bal = await splitwiseApi.getPoolBalance(eventId);
@@ -77,16 +86,18 @@ export function SharedPool({ eventId }: SharedPoolProps) {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-wider font-semibold text-blue-300/70 ml-1">User ID</label>
-                        <Input
-                            type="number"
-                            placeholder="Your ID"
-                            value={userId}
-                            onChange={(e) => setUserId(e.target.value)}
-                            className="input-glass h-12 border-blue-500/10 focus-visible:ring-blue-500/50"
-                        />
-                    </div>
+                    {!hasUserId && (
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-wider font-semibold text-blue-300/70 ml-1">User ID</label>
+                            <Input
+                                type="number"
+                                placeholder="Your ID"
+                                value={userId}
+                                onChange={(e) => setUserId(e.target.value)}
+                                className="input-glass h-12 border-blue-500/10 focus-visible:ring-blue-500/50"
+                            />
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-wider font-semibold text-blue-300/70 ml-1">Deposit Amount</label>
                         <div className="relative">

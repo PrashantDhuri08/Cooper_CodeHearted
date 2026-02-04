@@ -1,49 +1,33 @@
+export interface User {
+    id: number;
+    email: string;
+    wallet_balance: number;
+}
+
+export interface RegisterResponse {
+    id: number;
+    email: string;
+    wallet_balance: number;
+}
+
+export interface LoginResponse {
+    user_id: number;
+}
+
 export interface Event {
-    eventId: string;
+    id: number;
     title: string;
-    organizerId: number;
+    admin_user_id: number;
 }
 
 export interface Participant {
-    id: number;
-    eventId: string;
-    userId: number;
+    user_id: number;
+    is_active: boolean;
 }
 
 export interface ExpenseCategory {
     id: number;
-    eventId: string;
     name: string;
-}
-
-export interface Expense {
-    id: number;
-    eventId: string;
-    categoryId: number;
-    amount: number;
-    payerId: number; // Assuming payer is tracked, though endpoint doesn't explicitly ask for it in CREATE EXPENSE? 
-    // Wait, CREATE EXPENSE: POST /expenses?event_id={eventId}&category_id={categoryId}&amount={amount}
-    // It doesn't take user_id? That's odd. Maybe it assumes a context or it's incomplete in spec. 
-    // Re-reading spec: "POST /expenses... UI: Select Category, Input Amount". 
-    // Maybe backend handles it? Or maybe I missed something. 
-    // Ah, the user flow says "CREATE EXPENSE (FINTERNET PAYMENT)".
-    // For now I'll stick to the response types.
-}
-
-export interface Settlement {
-    userId: number;
-    netBalance: number;
-}
-
-export interface Deposit {
-    userId: number;
-    amount: number;
-}
-
-export interface CreateEventResponse {
-    id: number;
-    title: string;
-    organizer_id: number;
 }
 
 export interface PaymentIntentResponse {
@@ -53,9 +37,12 @@ export interface PaymentIntentResponse {
 }
 
 export interface PaymentStatus {
-    intent_id: string;
     status: string;
-    settlement_status: string;
+    settlementStatus: string;
+}
+
+export interface SettlementResponse {
+    [userId: string]: number;
 }
 
 export interface LedgerEntry {
@@ -64,4 +51,3 @@ export interface LedgerEntry {
     status: string;
 }
 
-export type SettlementResponse = Record<string, number>;

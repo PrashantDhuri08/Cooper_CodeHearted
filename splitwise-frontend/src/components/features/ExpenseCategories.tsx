@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { splitwiseApi, ExpenseCategory } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,13 @@ export function ExpenseCategories({ eventId, categories, onCategoryAdded }: Expe
     const [loading, setLoading] = useState(false);
     const [joinLoading, setJoinLoading] = useState<number | null>(null);
     const [joinUserId, setJoinUserId] = useState<{ [key: number]: string }>({});
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedUserId = localStorage.getItem("userId");
+        if (storedUserId) setCurrentUserId(storedUserId);
+    }, []);
+
 
     // Fetch categories on mount (handled partially by parent but let's ensure fresh data or move state up?)
     // Actually EventDashboard holds the category state. 
@@ -40,7 +47,7 @@ export function ExpenseCategories({ eventId, categories, onCategoryAdded }: Expe
             // If backend returns just 'message', we might need to fake the ID or re-fetch (which we can't do easily).
             // Let's assume the backend follows standard patterns and returns the object.
             // If not, I'll generate a random ID for UI purposes if the backend is opaque.
-            const newCat: ExpenseCategory = res.id ? res : { id: Math.floor(Math.random() * 10000), name: newCategoryName, eventId };
+            const newCat: ExpenseCategory = res.id ? res : { id: Math.floor(Math.random() * 10000), name: newCategoryName };
 
             onCategoryAdded(newCat);
             setNewCategoryName("");
@@ -53,13 +60,16 @@ export function ExpenseCategories({ eventId, categories, onCategoryAdded }: Expe
     };
 
     const handleJoin = async (categoryId: number) => {
-        const userId = joinUserId[categoryId];
-        if (!userId) return;
+        const userId = currentUserId || joinUserId[categoryId];
+        if (!userId) {
+            alert("Provide User ID or Login first.");
+            return;
+        }
 
         setJoinLoading(categoryId);
         try {
             await splitwiseApi.joinCategory(categoryId, Number(userId));
-            alert(`User ${userId} joined category!`);
+            alert(`Joined category!`);
             setJoinUserId(prev => ({ ...prev, [categoryId]: "" }));
         } catch (error) {
             console.error("Failed to join category", error);
@@ -100,14 +110,16 @@ export function ExpenseCategories({ eventId, categories, onCategoryAdded }: Expe
                                 className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-2"
                             >
                                 <div className="font-medium text-sm text-gray-200">{cat.name}</div>
-                                <div className="flex gap-2">
-                                    <Input
-                                        type="number"
-                                        placeholder="User ID"
-                                        className="h-8 text-xs bg-black/20"
-                                        value={joinUserId[cat.id] || ""}
-                                        onChange={(e) => setJoinUserId(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                                    />
+                                <div className="flex gap-2 items-center">
+                                    {!currentUserId && (
+                                        <Input
+                                            type="number"
+                                            placeholder="ID"
+                                            className="h-8 w-16 text-xs bg-black/20"
+                                            value={joinUserId[cat.id] || ""}
+                                            onChange={(e) => setJoinUserId(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                                        />
+                                    )}
                                     <Button
                                         size="sm"
                                         variant="secondary"
@@ -116,7 +128,7 @@ export function ExpenseCategories({ eventId, categories, onCategoryAdded }: Expe
                                         isLoading={joinLoading === cat.id}
                                     >
                                         <LinkIcon className="w-3 h-3 mr-1" />
-                                        Join
+                                        {currentUserId ? "Join" : "ID Join"}
                                     </Button>
                                 </div>
                             </motion.div>

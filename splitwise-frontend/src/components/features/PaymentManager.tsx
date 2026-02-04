@@ -101,7 +101,7 @@ export function PaymentManager() {
                                         <span className="text-purple-300">Current Status:</span>
                                         <div className="flex flex-col items-end">
                                             <span className="font-bold text-white uppercase">{status.status}</span>
-                                            <span className="text-[10px] text-purple-400">Settlement: {status.settlement_status}</span>
+                                            <span className="text-[10px] text-purple-400">Settlement: {status.settlementStatus}</span>
                                         </div>
                                     </div>
                                 </>
