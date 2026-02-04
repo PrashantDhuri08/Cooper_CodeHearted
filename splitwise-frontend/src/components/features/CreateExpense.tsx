@@ -1,96 +1,139 @@
 "use client";
 
 import { useState } from "react";
-import { splitwiseApi, ExpenseCategory } from "@/lib/api";
+import { splitwiseApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Receipt, CreditCard } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { DollarSign, Loader2, ExternalLink } from "lucide-react";
 
 interface CreateExpenseProps {
-    eventId: string;
-    categories: ExpenseCategory[];
+    eventId: number;
 }
 
-export function CreateExpense({ eventId, categories }: CreateExpenseProps) {
-    const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+export function CreateExpense({ eventId }: CreateExpenseProps) {
+    const [categoryId, setCategoryId] = useState("");
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [paymentUrl, setPaymentUrl] = useState("");
+    const [intentId, setIntentId] = useState("");
 
-    const handleCreate = async () => {
-        if (!selectedCategoryId || !amount) return;
+    const handleCreateExpense = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setPaymentUrl("");
+        setIntentId("");
         setLoading(true);
+
         try {
-            const res = await splitwiseApi.createExpense(eventId, Number(selectedCategoryId), Number(amount));
-            if (res.payment_url) {
-                window.location.href = res.payment_url;
-            } else {
-                alert("Expense created, but no payment URL returned.");
-            }
-        } catch (error) {
-            console.error("Failed to create expense", error);
-            alert("Failed to create expense.");
+            const response = await splitwiseApi.createExpense(
+                eventId,
+                parseInt(categoryId),
+                parseFloat(amount)
+            );
+            setPaymentUrl(response.payment_url);
+            setIntentId(response.intent_id);
+        } catch (err: any) {
+            setError(err.response?.data?.error || "Failed to create expense");
         } finally {
-            // Don't separate setLoading(false) if redirecting, but good for error case.
             setLoading(false);
         }
     };
 
     return (
-        <Card className="glass-card h-full border-green-500/20 shadow-green-500/10">
-            <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-3 text-2xl text-green-100 font-heading">
-                    <div className="p-2 bg-green-500/10 rounded-lg">
-                        <Receipt className="w-6 h-6 text-green-400" />
-                    </div>
-                    Add Expense
-                </CardTitle>
-                <CardDescription className="text-green-200/50">Record a new payment for a category.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-4">
-                <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-wider font-semibold text-green-300/70 ml-1">Category</label>
-                    <div className="relative">
-                        <select
-                            className="flex h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/50 transition-all duration-300 appearance-none cursor-pointer hover:bg-black/30"
-                            value={selectedCategoryId}
-                            onChange={(e) => setSelectedCategoryId(e.target.value)}
-                        >
-                            <option value="" disabled className="bg-gray-900 text-gray-500">Select a category...</option>
-                            {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id} className="bg-gray-900 text-white">
-                                    {cat.name}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                            ▼
+        <Card className="p-8 bg-white/5 backdrop-blur-xl border-white/10">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+            >
+                <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                    <DollarSign className="w-6 h-6 mr-2 text-green-400" />
+                    Create Expense
+                </h3>
+
+                <form onSubmit={handleCreateExpense} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                Category ID
+                            </label>
+                            <Input
+                                type="number"
+                                value={categoryId}
+                                onChange={(e) => setCategoryId(e.target.value)}
+                                placeholder="1"
+                                required
+                                className="bg-white/5 border-white/10 text-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                Amount
+                            </label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                placeholder="100.00"
+                                required
+                                className="bg-white/5 border-white/10 text-white"
+                            />
                         </div>
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-wider font-semibold text-green-300/70 ml-1">Amount (₹)</label>
-                    <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
-                        <Input
-                            type="number"
-                            placeholder="0.00"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            className="input-glass pl-8 h-12 text-lg border-green-500/10 focus-visible:ring-green-500/50"
-                        />
-                    </div>
-                </div>
-                <Button
-                    className="w-full h-12 text-lg font-medium bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 border-0 mt-2 shadow-lg shadow-emerald-900/20 hover:shadow-emerald-900/40 transition-all hover:scale-[1.02] active:scale-[0.98] rounded-xl"
-                    onClick={handleCreate}
-                    isLoading={loading}
-                    disabled={!selectedCategoryId || !amount}
-                >
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Pay & Create
-                </Button>
-            </CardContent>
+
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
+
+                    {paymentUrl && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 space-y-2"
+                        >
+                            <p className="text-green-400 text-sm font-medium">
+                                Payment Intent Created!
+                            </p>
+                            <p className="text-gray-300 text-xs">Intent ID: {intentId}</p>
+                            <a
+                                href={paymentUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center text-indigo-400 hover:text-indigo-300 text-sm"
+                            >
+                                Open Payment Page
+                                <ExternalLink className="w-4 h-4 ml-1" />
+                            </a>
+                        </motion.div>
+                    )}
+
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                    >
+                        {loading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <>
+                                <DollarSign className="w-4 h-4 mr-2" />
+                                Create Expense
+                            </>
+                        )}
+                    </Button>
+                </form>
+            </motion.div>
         </Card>
     );
 }

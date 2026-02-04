@@ -1,9 +1,19 @@
-from sqlalchemy import Column, Integer, Float, ForeignKey
+# from sqlalchemy import Column, Integer, Float, ForeignKey
+# from app.db.base import Base
+
+# class Contribution(Base):
+#     __tablename__ = "contributions"
+#     id = Column(Integer, primary_key=True)
+#     event_id = Column(Integer, ForeignKey("events.id"))
+#     user_id = Column(Integer)
+#     amount = Column(Float)
+from sqlalchemy import Column, Integer, Float
 from app.db.base import Base
 
 class Contribution(Base):
     __tablename__ = "contributions"
+
     id = Column(Integer, primary_key=True)
-    event_id = Column(Integer, ForeignKey("events.id"))
+    event_id = Column(Integer)
     user_id = Column(Integer)
     amount = Column(Float)

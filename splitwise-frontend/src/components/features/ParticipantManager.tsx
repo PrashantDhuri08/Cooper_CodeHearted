@@ -1,92 +1,105 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useState } from "react";
 import { splitwiseApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, Users } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { UserPlus, Loader2 } from "lucide-react";
 
 interface ParticipantManagerProps {
-    eventId: string;
+    eventId: number;
+    adminId: number;
 }
 
-export function ParticipantManager({ eventId }: ParticipantManagerProps) {
-    const [userId, setUserId] = useState("");
-    const [participants, setParticipants] = useState<number[]>([]);
+export function ParticipantManager({ eventId, adminId }: ParticipantManagerProps) {
+    const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
-    useEffect(() => {
-        const fetchParticipants = async () => {
-            try {
-                const data = await splitwiseApi.getParticipants(eventId);
-                setParticipants(data);
-            } catch (error) {
-                console.error("Failed to fetch participants", error);
-            }
-        };
-        fetchParticipants();
-    }, [eventId]);
-
-    const handleAdd = async () => {
-        if (!userId) return;
+    const handleAddParticipant = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setSuccess("");
         setLoading(true);
+
         try {
-            await splitwiseApi.addParticipant(eventId, Number(userId));
-            setParticipants((prev) => [...prev, Number(userId)]);
-            setUserId("");
-        } catch (error) {
-            console.error("Failed to add participant", error);
-            alert("Failed to add participant.");
+            const response = await splitwiseApi.addParticipant(eventId, email, adminId);
+            if ("error" in response) {
+                setError(response.error);
+            } else {
+                setSuccess("Participant added successfully!");
+                setEmail("");
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.error || "Failed to add participant");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <Card className="glass-panel h-full">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-indigo-400" />
-                    Participants
-                </CardTitle>
-                <CardDescription>Add friends to the group.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                    <Input
-                        type="number"
-                        placeholder="User ID"
-                        value={userId}
-                        onChange={(e) => setUserId(e.target.value)}
-                    />
-                    <Button onClick={handleAdd} isLoading={loading} variant="secondary" className="px-6 flex shrink-0">
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add
-                    </Button>
-                </div>
+        <Card className="p-6 bg-white/5 backdrop-blur-xl border-white/10">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+            >
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                    <UserPlus className="w-5 h-5 mr-2 text-indigo-400" />
+                    Add Participant
+                </h3>
 
-                <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-400 mb-2">Current Members</p>
-                    <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
-                        <AnimatePresence>
-                            {participants.map((p, i) => (
-                                <motion.div
-                                    key={`${p}-${i}`}
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    className="bg-white/10 rounded-md p-2 text-center text-sm font-medium border border-white/5"
-                                >
-                                    User #{p}
-                                </motion.div>
-                            ))}
-                            {participants.length === 0 && (
-                                <p className="col-span-2 text-center text-xs text-gray-500 py-4">No participants added yet.</p>
-                            )}
-                        </AnimatePresence>
+                <form onSubmit={handleAddParticipant} className="space-y-4">
+                    <div>
+                        <Input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="participant@email.com"
+                            required
+                            className="bg-white/5 border-white/10 text-white"
+                        />
                     </div>
-                </div>
-            </CardContent>
+
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
+
+                    {success && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs"
+                        >
+                            {success}
+                        </motion.div>
+                    )}
+
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                    >
+                        {loading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <>
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Add Participant
+                            </>
+                        )}
+                    </Button>
+                </form>
+            </motion.div>
         </Card>
     );
 }

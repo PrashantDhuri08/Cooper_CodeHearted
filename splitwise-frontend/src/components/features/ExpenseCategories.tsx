@@ -1,132 +1,101 @@
 "use client";
 
 import { useState } from "react";
-import { splitwiseApi, ExpenseCategory } from "@/lib/api";
+import { splitwiseApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Layers, Plus, Link as LinkIcon } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Card } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { FolderPlus, Loader2 } from "lucide-react";
 
 interface ExpenseCategoriesProps {
-    eventId: string;
-    categories: ExpenseCategory[];
-    onCategoryAdded: (category: ExpenseCategory) => void;
+    eventId: number;
+    userId: number;
 }
 
-export function ExpenseCategories({ eventId, categories, onCategoryAdded }: ExpenseCategoriesProps) {
-    const [newCategoryName, setNewCategoryName] = useState("");
+export function ExpenseCategories({ eventId, userId }: ExpenseCategoriesProps) {
+    const [categoryName, setCategoryName] = useState("");
     const [loading, setLoading] = useState(false);
-    const [joinLoading, setJoinLoading] = useState<number | null>(null);
-    const [joinUserId, setJoinUserId] = useState<{ [key: number]: string }>({});
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
-    // Fetch categories on mount (handled partially by parent but let's ensure fresh data or move state up?)
-    // Actually EventDashboard holds the category state. 
-    // Wait, the parent `EventDashboard` passes `categories` as a prop!
-    // So ExpenseCategories shouldn't fetch it itself?
-    // "categories={categories}"
-    // Ah! I should update `EventDashboard` to fetch categories and pass them down.
-    // BUT the user wants PERSISTENCE.
-    // If EventDashboard fetches, that's better.
-    // Let's check EventDashboard again.
-
-    const handleCreate = async () => {
-        if (!newCategoryName) return;
+    const handleCreateCategory = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setSuccess("");
         setLoading(true);
-        try {
-            // Backend returns { id, name, event_id } ideally. We'll simulate if needed or rely on response.
-            const res = await splitwiseApi.createCategory(eventId, newCategoryName);
-            // Assuming res is the category object or contains it. 
-            // If backend returns just 'message', we might need to fake the ID or re-fetch (which we can't do easily).
-            // Let's assume the backend follows standard patterns and returns the object.
-            // If not, I'll generate a random ID for UI purposes if the backend is opaque.
-            const newCat: ExpenseCategory = res.id ? res : { id: Math.floor(Math.random() * 10000), name: newCategoryName, eventId };
 
-            onCategoryAdded(newCat);
-            setNewCategoryName("");
-        } catch (error) {
-            console.error("Failed to create category", error);
-            alert("Failed to create category");
+        try {
+            const response = await splitwiseApi.createCategory(eventId, categoryName);
+            setSuccess(`Category created with ID: ${response.category_id}`);
+            setCategoryName("");
+        } catch (err: any) {
+            setError(err.response?.data?.error || "Failed to create category");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleJoin = async (categoryId: number) => {
-        const userId = joinUserId[categoryId];
-        if (!userId) return;
-
-        setJoinLoading(categoryId);
-        try {
-            await splitwiseApi.joinCategory(categoryId, Number(userId));
-            alert(`User ${userId} joined category!`);
-            setJoinUserId(prev => ({ ...prev, [categoryId]: "" }));
-        } catch (error) {
-            console.error("Failed to join category", error);
-            alert("Failed to join category");
-        } finally {
-            setJoinLoading(null);
-        }
-    };
-
     return (
-        <Card className="glass-panel h-full">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-blue-400" />
-                    Categories
-                </CardTitle>
-                <CardDescription>Manage expense categories.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="flex gap-2">
-                    <Input
-                        placeholder="New Category Name"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                    />
-                    <Button onClick={handleCreate} isLoading={loading} size="icon" variant="secondary">
-                        <Plus className="w-4 h-4" />
-                    </Button>
-                </div>
+        <Card className="p-6 bg-white/5 backdrop-blur-xl border-white/10">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+            >
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                    <FolderPlus className="w-5 h-5 mr-2 text-purple-400" />
+                    Create Category
+                </h3>
 
-                <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
-                    <AnimatePresence>
-                        {categories.map((cat) => (
-                            <motion.div
-                                key={cat.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-2"
-                            >
-                                <div className="font-medium text-sm text-gray-200">{cat.name}</div>
-                                <div className="flex gap-2">
-                                    <Input
-                                        type="number"
-                                        placeholder="User ID"
-                                        className="h-8 text-xs bg-black/20"
-                                        value={joinUserId[cat.id] || ""}
-                                        onChange={(e) => setJoinUserId(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                                    />
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="h-8 px-3 text-[10px]"
-                                        onClick={() => handleJoin(cat.id)}
-                                        isLoading={joinLoading === cat.id}
-                                    >
-                                        <LinkIcon className="w-3 h-3 mr-1" />
-                                        Join
-                                    </Button>
-                                </div>
-                            </motion.div>
-                        ))}
-                        {categories.length === 0 && (
-                            <p className="text-center text-xs text-gray-500 py-4">No categories created.</p>
+                <form onSubmit={handleCreateCategory} className="space-y-4">
+                    <div>
+                        <Input
+                            type="text"
+                            value={categoryName}
+                            onChange={(e) => setCategoryName(e.target.value)}
+                            placeholder="Food, Transport, Accommodation..."
+                            required
+                            className="bg-white/5 border-white/10 text-white"
+                        />
+                    </div>
+
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
+
+                    {success && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs"
+                        >
+                            {success}
+                        </motion.div>
+                    )}
+
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    >
+                        {loading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <>
+                                <FolderPlus className="w-4 h-4 mr-2" />
+                                Create Category
+                            </>
                         )}
-                    </AnimatePresence>
-                </div>
-            </CardContent>
+                    </Button>
+                </form>
+            </motion.div>
         </Card>
     );
 }

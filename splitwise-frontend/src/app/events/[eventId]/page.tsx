@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ExpenseCategory, splitwiseApi } from "@/lib/api";
 import { ParticipantManager } from "@/components/features/ParticipantManager";
 import { SharedPool } from "@/components/features/SharedPool";
 import { ExpenseCategories } from "@/components/features/ExpenseCategories";
@@ -12,34 +11,35 @@ import { SettlementTable } from "@/components/features/SettlementTable";
 import { ExpenseChart } from "@/components/features/ExpenseChart";
 import { SettlementGraph } from "@/components/features/SettlementGraph";
 import { PaymentManager } from "@/components/features/PaymentManager";
+import { VotingManager } from "@/components/features/VotingManager";
+import { JoinCategory } from "@/components/features/JoinCategory";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 
 export default function EventDashboard() {
     const params = useParams();
-    const eventId = params.eventId as string;
-    const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
+    const eventId = parseInt(params.eventId as string);
+    const userId = parseInt(searchParams.get("userId") || "0");
+    const adminId = parseInt(searchParams.get("adminId") || "0");
+
+    // Redirect if missing required params
     useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const data = await splitwiseApi.getCategories(eventId);
-                setCategories(data);
-            } catch (error) {
-                console.error("Failed to fetch categories", error);
-            }
-        };
-        fetchCategories();
-    }, [eventId]);
+        if (!userId || !adminId) {
+            router.push("/");
+        }
+    }, [userId, adminId, router]);
 
-    const handleCategoryAdded = (newCategory: ExpenseCategory) => {
-        setCategories((prev) => [...prev, newCategory]);
-    };
+    if (!userId || !adminId) {
+        return null;
+    }
 
     return (
         <main className="min-h-screen p-4 sm:p-8 space-y-8 relative overflow-hidden bg-background selection:bg-indigo-500/30">
             {/* Background Ambience - Enhanced */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none fixed">
+            <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
                 <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-900/20 rounded-full blur-[120px] animate-pulse-slow" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-900/20 rounded-full blur-[100px] animate-pulse-slow delay-1000" />
                 <div className="absolute top-[40%] left-[-10%] w-[30%] h-[30%] bg-pink-900/10 rounded-full blur-[80px] animate-pulse-slow delay-2000" />
@@ -62,7 +62,10 @@ export default function EventDashboard() {
                     </h1>
                     <div className="flex items-center gap-2 justify-center md:justify-start text-gray-400 mt-2">
                         <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm font-mono text-indigo-300">
-                            ID: {eventId}
+                            Event ID: {eventId}
+                        </span>
+                        <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm font-mono text-purple-300">
+                            User ID: {userId}
                         </span>
                     </div>
                 </motion.div>
@@ -74,9 +77,9 @@ export default function EventDashboard() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.6 }}
-                    className="col-span-1 md:col-span-1 lg:col-span-1 h-full space-y-6"
+                    className="col-span-1 md:col-span-1 lg:col-span-1 space-y-6"
                 >
-                    <ParticipantManager eventId={eventId} />
+                    <ParticipantManager eventId={eventId} adminId={adminId} />
                     <PaymentManager />
                 </motion.div>
 
@@ -85,14 +88,10 @@ export default function EventDashboard() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.6 }}
-                    className="col-span-1 md:col-span-1 lg:col-span-1 h-full space-y-6"
+                    className="col-span-1 md:col-span-1 lg:col-span-1 space-y-6"
                 >
-                    <SharedPool eventId={eventId} />
-                    <ExpenseCategories
-                        eventId={eventId}
-                        categories={categories}
-                        onCategoryAdded={handleCategoryAdded}
-                    />
+                    <SharedPool eventId={eventId} userId={userId} />
+                    <ExpenseCategories eventId={eventId} userId={userId} />
                 </motion.div>
 
                 {/* Row 1 Right: Visuals (Chart & Graph) */}
@@ -100,10 +99,29 @@ export default function EventDashboard() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.6 }}
-                    className="col-span-1 md:col-span-2 lg:col-span-1 h-full space-y-6"
+                    className="col-span-1 md:col-span-2 lg:col-span-1 space-y-6"
                 >
-                    <ExpenseChart categories={categories} />
+                    <ExpenseChart eventId={eventId} />
                     <SettlementGraph />
+                </motion.div>
+
+                {/* Row 2: Voting & Join Category */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                    className="col-span-1 md:col-span-1 lg:col-span-1 space-y-6"
+                >
+                    <VotingManager eventId={eventId} voterId={userId} />
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.6 }}
+                    className="col-span-1 md:col-span-1 lg:col-span-1 space-y-6"
+                >
+                    <JoinCategory eventId={eventId} userId={userId} />
                 </motion.div>
 
                 {/* Row 2: Create Expense (Full Width Hero) */}
@@ -111,9 +129,9 @@ export default function EventDashboard() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 0.6 }}
-                    className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[400px]"
+                    className="col-span-1 md:col-span-2 lg:col-span-3"
                 >
-                    <CreateExpense eventId={eventId} categories={categories} />
+                    <CreateExpense eventId={eventId} />
                 </motion.div>
 
                 {/* Row 3: Settlement Table */}
