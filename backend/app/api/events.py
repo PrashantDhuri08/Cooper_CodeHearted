@@ -26,3 +26,18 @@ def create_event(title: str, organizer_id: int, db: Session = Depends(get_db)):
         "title": event.title,
         "organizer_id": organizer_id
     }
+
+@router.post("/{event_id}/participants")
+def add_participant(event_id: int, user_id: int, db: Session = Depends(get_db)):
+    # Check if already exists to avoid duplicates/errors
+    existing = db.query(Participant).filter_by(event_id=event_id, user_id=user_id).first()
+    if not existing:
+        participant = Participant(event_id=event_id, user_id=user_id)
+        db.add(participant)
+        db.commit()
+    return {"status": "added", "user_id": user_id}
+
+@router.get("/{event_id}/participants")
+def get_participants(event_id: int, db: Session = Depends(get_db)):
+    participants = db.query(Participant).filter_by(event_id=event_id).all()
+    return [p.user_id for p in participants]
