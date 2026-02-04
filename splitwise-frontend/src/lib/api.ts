@@ -12,7 +12,7 @@ const api = axios.create({
 });
 
 // ========================================
-// 🎯 BACKEND API ROUTES (14 TOTAL)
+// 🎯 BACKEND API ROUTES (15 TOTAL)
 // ========================================
 
 export const splitwiseApi = {
@@ -179,6 +179,19 @@ export const splitwiseApi = {
                 title: string;
             }>;
         }>(`/users/${userId}/events`);
+        return response.data;
+    },
+
+    // 1️⃣5️⃣ Get Event Participants
+    // GET /events/{event_id}/participants
+    getEventParticipants: async (eventId: number) => {
+        const response = await api.get<{
+            event_id: number;
+            participants: Array<{
+                user_id: number;
+                email: string;
+            }>;
+        }>(`/events/${eventId}/participants`);
         return response.data;
     },
 };

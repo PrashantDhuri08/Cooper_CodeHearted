@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ParticipantManager } from "@/components/features/ParticipantManager";
+import { ParticipantList } from "@/components/features/ParticipantList";
 import { SharedPool } from "@/components/features/SharedPool";
 import { ExpenseCategories } from "@/components/features/ExpenseCategories";
 import { CreateExpense } from "@/components/features/CreateExpense";
@@ -80,6 +81,7 @@ export default function EventDashboard() {
                     className="col-span-1 md:col-span-1 lg:col-span-1 space-y-6"
                 >
                     <ParticipantManager eventId={eventId} adminId={adminId} />
+                    <ParticipantList eventId={eventId} />
                     <PaymentManager />
                 </motion.div>
 
