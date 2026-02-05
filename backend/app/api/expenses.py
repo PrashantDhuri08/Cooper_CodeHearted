@@ -8,9 +8,16 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 finternet = FinternetClient()
 
 @router.post("/")
-def create_expense(event_id: int, category_id: int, amount: float, db: Session = Depends(get_db)):
+def create_expense(
+    event_id: int,
+    category_id: int,
+    amount: float,
+    db: Session = Depends(get_db)
+):
+    # Create Finternet payment intent
     intent = finternet.create_payment_intent(amount)
 
+    # Store expense in database
     expense = Expense(
         event_id=event_id,
         category_id=category_id,

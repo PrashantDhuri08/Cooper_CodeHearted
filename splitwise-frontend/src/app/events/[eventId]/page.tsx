@@ -14,6 +14,7 @@ import { SettlementGraph } from "@/components/features/SettlementGraph";
 import { PaymentManager } from "@/components/features/PaymentManager";
 import { VotingManager } from "@/components/features/VotingManager";
 import { JoinCategory } from "@/components/features/JoinCategory";
+import { SpendingRules } from "@/components/features/SpendingRules";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 
@@ -124,6 +125,15 @@ export default function EventDashboard() {
                     className="col-span-1 md:col-span-1 lg:col-span-1 space-y-6"
                 >
                     <JoinCategory eventId={eventId} userId={userId} />
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7, duration: 0.6 }}
+                    className="col-span-1 md:col-span-1 lg:col-span-1 space-y-6"
+                >
+                    <SpendingRules eventId={eventId} />
                 </motion.div>
 
                 {/* Row 2: Create Expense (Full Width Hero) */}

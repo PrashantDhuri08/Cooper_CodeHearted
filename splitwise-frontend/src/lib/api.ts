@@ -12,7 +12,7 @@ const api = axios.create({
 });
 
 // ========================================
-// 🎯 BACKEND API ROUTES (15 TOTAL)
+// 🎯 BACKEND API ROUTES (16 TOTAL)
 // ========================================
 
 export const splitwiseApi = {
@@ -192,6 +192,25 @@ export const splitwiseApi = {
                 email: string;
             }>;
         }>(`/events/${eventId}/participants`);
+        return response.data;
+    },
+
+    // 1️⃣6️⃣ Create Spending Rule
+    // POST /rules?event_id=&max_amount=&admin_only=&approval_required=
+    createSpendingRule: async (
+        eventId: number,
+        maxAmount: number,
+        adminOnly: boolean = false,
+        approvalRequired: boolean = false
+    ) => {
+        const response = await api.post<{ status: string }>('/rules', null, {
+            params: {
+                event_id: eventId,
+                max_amount: maxAmount,
+                admin_only: adminOnly,
+                approval_required: approvalRequired,
+            },
+        });
         return response.data;
     },
 };
